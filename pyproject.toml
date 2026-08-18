@@ -1,0 +1,14 @@
+[project]
+name = "simpl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Franciscossf", email = "francisco.santossouzafilho@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "opencv-python-headless>=5.0.0.93",
+    "pyqtgraph>=0.14.0",
+    "pyside6>=6.11.1",
+]

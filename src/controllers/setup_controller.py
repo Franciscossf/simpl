@@ -1,0 +1,127 @@
+from src.models.inspection_model import InspectionModel
+from src.views.setup_view import SetupView
+from src.workers.camera_worker import CameraWorker
+
+
+class SetupController:
+    def __init__(self, model: InspectionModel, view: SetupView) -> None:
+        self.model = model
+        self.view = view
+        self._camera_worker: CameraWorker | None = None
+        self._current_camera: str | None = None
+        self._last_model_name: str | None = None
+        self._connect_signals()
+        self._load_cameras()
+
+    def _connect_signals(self) -> None:
+        self.view.camera_selector.currentTextChanged.connect(self._on_camera_changed)
+        self.view.add_roi_button.clicked.connect(self._on_add_roi)
+        self.view.remove_roi_button.clicked.connect(self._on_remove_roi)
+        self.view.import_button.clicked.connect(self._on_import)
+        self.view.save_button.clicked.connect(self._on_save)
+        self.view.toggle_camera_button.clicked.connect(self._on_toggle_camera)
+
+    def _load_cameras(self) -> None:
+        self.view.set_cameras(self.model.get_cameras())
+
+    def _on_camera_changed(self, camera: str) -> None:
+        self._commit_current_camera_rois()
+        self._current_camera = camera
+        self._refresh_current_camera_view()
+
+    def _refresh_current_camera_view(self) -> None:
+        self.view.clear_rois()
+        self.view.clear_frame()
+        if not self._current_camera:
+            return
+
+        reference_image = self.model.get_reference_image(self._current_camera)
+        if reference_image is not None:
+            self.view.show_frame(reference_image)
+
+        for roi in self.model.get_rois(self._current_camera):
+            self.view.add_roi_item(
+                roi["name"],
+                roi["x"],
+                roi["y"],
+                roi["w"],
+                roi["h"],
+                roi.get("angle", 0.0),
+            )
+
+    def _commit_current_camera_rois(self) -> None:
+        if not self._current_camera:
+            return
+        self.model.set_rois(self._current_camera, self.view.get_rois_geometry())
+        frame = self.view.get_current_frame()
+        if frame is not None:
+            self.model.set_reference_image(self._current_camera, frame)
+
+    def _on_add_roi(self) -> None:
+        name = self.view.prompt_roi_name()
+        if name:
+            self.view.add_roi_item(name)
+
+    def _on_remove_roi(self) -> None:
+        name = self.view.selected_roi_name()
+        if name:
+            self.view.remove_roi_item(name)
+
+    def _on_save(self) -> None:
+        self._commit_current_camera_rois()
+
+        model_name = self.view.prompt_model_name(default=self._last_model_name or "")
+        if not model_name:
+            return
+        if not self.view.confirm_save(model_name):
+            return
+
+        self.model.save_model(model_name)
+        self._last_model_name = model_name
+        self.view.show_saved_message(model_name)
+
+    def _on_import(self) -> None:
+        models = self.model.list_saved_models()
+        model_name = self.view.prompt_model_to_import(models)
+        if not model_name:
+            return
+        if not self.model.load_model(model_name):
+            self.view.show_camera_error(f"Nao foi possivel carregar o modelo '{model_name}'.")
+            return
+
+        self._last_model_name = model_name
+        self._refresh_current_camera_view()
+        self.view.show_imported_message(model_name)
+
+    def _on_toggle_camera(self) -> None:
+        if self._camera_worker is not None and self._camera_worker.isRunning():
+            self._stop_camera()
+        else:
+            self._start_camera()
+
+    def _start_camera(self) -> None:
+        camera_index = self.view.camera_selector.currentIndex()
+        if camera_index < 0:
+            return
+        self._camera_worker = CameraWorker(camera_index)
+        self._camera_worker.frame_ready.connect(self.view.show_frame)
+        self._camera_worker.error.connect(self._on_camera_error)
+        self._camera_worker.finished.connect(self._camera_worker.deleteLater)
+        self._camera_worker.start()
+        self.view.set_camera_connected(True)
+
+    def _stop_camera(self) -> None:
+        if self._camera_worker is not None:
+            self._camera_worker.requestInterruption()
+            self._camera_worker.wait(2000)
+            self._camera_worker = None
+        self.view.set_camera_connected(False)
+
+    def _on_camera_error(self, message: str) -> None:
+        self.view.show_camera_error(message)
+        self._camera_worker = None
+        self.view.set_camera_connected(False)
+
+    def shutdown(self) -> None:
+        if self._camera_worker is not None and self._camera_worker.isRunning():
+            self._stop_camera()

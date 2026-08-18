@@ -11,4 +11,5 @@ dependencies = [
     "opencv-python-headless>=5.0.0.93",
     "pyqtgraph>=0.14.0",
     "pyside6>=6.11.1",
+    "scikit-image>=0.26.0",
 ]

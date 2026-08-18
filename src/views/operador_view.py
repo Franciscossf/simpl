@@ -3,8 +3,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QTreeWidget,
@@ -28,6 +30,13 @@ class OperadorView(QWidget):
     def _setup_ui(self) -> None:
         self._roi_items: list[pg.ROI] = []
 
+        self.model_label = QLabel("Nenhum modelo carregado")
+        self.import_model_button = QPushButton("Importar modelo")
+
+        model_row = QHBoxLayout()
+        model_row.addWidget(self.model_label, stretch=1)
+        model_row.addWidget(self.import_model_button)
+
         self.tree = QTreeWidget()
         self.tree.setHeaderLabel("Tree")
         self.tree.setMinimumWidth(260)
@@ -47,6 +56,7 @@ class OperadorView(QWidget):
         self.clear_result()
 
         left_layout = QVBoxLayout()
+        left_layout.addLayout(model_row)
         left_layout.addWidget(self.tree, stretch=2)
         left_layout.addWidget(self.result_frame, stretch=1)
 
@@ -125,3 +135,25 @@ class OperadorView(QWidget):
 
     def clear_er_field(self) -> None:
         self.er_field.clear()
+
+    def show_error(self, message: str) -> None:
+        QMessageBox.warning(self, "Inspecao", message)
+
+    def set_send_enabled(self, enabled: bool) -> None:
+        self.send_button.setEnabled(enabled)
+
+    def prompt_model_to_import(self, models: list[str]) -> str | None:
+        if not models:
+            QMessageBox.information(
+                self, "Importar modelo", "Nenhum modelo salvo encontrado."
+            )
+            return None
+        name, confirmed = QInputDialog.getItem(
+            self, "Importar modelo", "Selecione o modelo:", models, editable=False
+        )
+        if confirmed and name:
+            return name
+        return None
+
+    def set_current_model(self, model_name: str) -> None:
+        self.model_label.setText(f"Modelo: {model_name}")

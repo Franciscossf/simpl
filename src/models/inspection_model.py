@@ -10,7 +10,6 @@ from src.utils.paths import data_path
 
 class InspectionModel(QObject):
     rois_changed = Signal()
-    result_changed = Signal(bool)
 
     def __init__(self, camera_count: int = 4) -> None:
         super().__init__()
@@ -114,7 +113,3 @@ class InspectionModel(QObject):
         if image_bgr is None:
             return None
         return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-
-    def submit_er(self, er_value: str) -> None:
-        # O teste de similaridade sera plugado aqui usando as ROIs e imagens de referencia.
-        pass

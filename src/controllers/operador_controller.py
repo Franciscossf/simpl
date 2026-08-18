@@ -10,15 +10,14 @@ class OperadorController:
         self._inspection_worker: InspectionWorker | None = None
         self._current_cameras: dict = {}
         self._connect_signals()
-        self._load_initial_data()
 
     def _connect_signals(self) -> None:
         self.view.send_button.clicked.connect(self._on_send_clicked)
         self.view.import_model_button.clicked.connect(self._on_import_model)
         self.view.tree.currentItemChanged.connect(self._on_tree_selection_changed)
-        self.model.rois_changed.connect(self._load_initial_data)
+        self.model.rois_changed.connect(self._refresh_tree)
 
-    def _load_initial_data(self) -> None:
+    def _refresh_tree(self) -> None:
         self.view.populate_tree(self.model.get_tree_data())
 
     def _on_import_model(self) -> None:
@@ -93,16 +92,11 @@ class OperadorController:
 
     def _on_camera_tested(self, camera: str, roi_results: list) -> None:
         self.view.set_test_results(camera, roi_results)
+        self.view.update_roi_scores(roi_results)
 
     def _on_inspection_done(self, report: dict) -> None:
         self.view.set_send_enabled(True)
-        scores = [
-            roi["score"]
-            for camera_data in report["cameras"].values()
-            for roi in camera_data["rois"]
-        ]
-        worst_score = min(scores) if scores else None
-        self.view.show_result(report["ok"], worst_score)
+        self.view.show_result(report["ok"])
         self._inspection_worker = None
 
     def _on_inspection_error(self, message: str) -> None:

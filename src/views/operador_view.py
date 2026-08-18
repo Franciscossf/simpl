@@ -66,6 +66,7 @@ class OperadorView(QWidget):
 
     def _setup_ui(self) -> None:
         self._roi_items: list[pg.ROI] = []
+        self._roi_labels: dict[str, pg.TextItem] = {}
 
         self.model_label = QLabel("Nenhum modelo carregado")
         self.import_model_button = QPushButton("Importar modelo")
@@ -136,7 +137,10 @@ class OperadorView(QWidget):
     def set_rois(self, rois: list[dict]) -> None:
         for item in self._roi_items:
             self.image_view.removeItem(item)
+        for label_item in self._roi_labels.values():
+            self.image_view.removeItem(label_item)
         self._roi_items = []
+        self._roi_labels = {}
 
         for roi in rois:
             roi_item = pg.ROI(
@@ -148,6 +152,32 @@ class OperadorView(QWidget):
             roi_item.setPen(pg.mkPen("y", width=2))
             self.image_view.addItem(roi_item)
             self._roi_items.append(roi_item)
+
+            label_item = pg.TextItem(
+                roi["name"], color="w", anchor=(0, 1), fill=pg.mkBrush(0, 0, 0, 180)
+            )
+            label_item.setPos(roi_item.mapToParent(pg.Point(0, 0)))
+            self.image_view.addItem(label_item)
+            self._roi_labels[roi["name"]] = label_item
+
+    def update_roi_scores(self, results: list[dict]) -> None:
+        for result in results:
+            old_label = self._roi_labels.get(result["name"])
+            if old_label is None:
+                continue
+            pos = old_label.pos()
+            self.image_view.removeItem(old_label)
+
+            color = _OK_COLOR if result["ok"] else _NG_COLOR
+            new_label = pg.TextItem(
+                f"{result['name']}: {result['score']:.1f}%",
+                color="w",
+                anchor=(0, 1),
+                fill=pg.mkBrush(color),
+            )
+            new_label.setPos(pos)
+            self.image_view.addItem(new_label)
+            self._roi_labels[result["name"]] = new_label
 
     def populate_tree(self, cameras: dict[str, list[str]]) -> None:
         self.tree.clear()
@@ -174,15 +204,12 @@ class OperadorView(QWidget):
             item.setText(0, result["name"])
             item.setIcon(0, _build_face_icon(result["ok"]))
 
-    def show_result(self, ok: bool, score: float | None = None) -> None:
+    def show_result(self, ok: bool) -> None:
         color = _OK_COLOR if ok else _NG_COLOR
-        text = "OK" if ok else "NG"
-        if score is not None:
-            text += f"\n{score:.1f}%"
-        self._paint_result(color, text, _RESULT_TEXT_COLOR)
+        self._paint_result(color, "OK" if ok else "NG", _RESULT_TEXT_COLOR)
 
     def clear_result(self) -> None:
-        self._paint_result(_NEUTRAL_COLOR, "OK ou NG", _NEUTRAL_TEXT_COLOR)
+        self._paint_result(_NEUTRAL_COLOR, "", _NEUTRAL_TEXT_COLOR)
 
     def _paint_result(self, background_color: str, text: str, text_color: str) -> None:
         self.result_frame.setStyleSheet(f"background-color: {background_color};")

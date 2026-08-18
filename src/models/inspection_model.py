@@ -56,6 +56,10 @@ class InspectionModel(QObject):
             json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
+        for camera, image in self._reference_images.items():
+            image_path = target_dir / f"{camera}.png"
+            cv2.imwrite(str(image_path), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+
     def list_saved_models(self) -> list[str]:
         models_dir = data_path("models")
         if not models_dir.exists():
@@ -63,7 +67,8 @@ class InspectionModel(QObject):
         return sorted(p.name for p in models_dir.iterdir() if p.is_dir())
 
     def load_model(self, model_name: str) -> bool:
-        target_file = data_path("models", model_name, "rois.json")
+        target_dir = data_path("models", model_name)
+        target_file = target_dir / "rois.json"
         if not target_file.exists():
             return False
 
@@ -74,10 +79,17 @@ class InspectionModel(QObject):
             if isinstance(camera_data, list):
                 # Formato antigo: lista de rois sem imagem embutida.
                 self._rois[camera] = camera_data
-                continue
+                camera_data = {}
+            else:
+                self._rois[camera] = camera_data.get("rois", [])
 
-            self._rois[camera] = camera_data.get("rois", [])
             image = self._decode_image(camera_data.get("image"))
+            if image is None:
+                image_path = target_dir / f"{camera}.png"
+                if image_path.exists():
+                    image_bgr = cv2.imread(str(image_path))
+                    if image_bgr is not None:
+                        image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             if image is not None:
                 self._reference_images[camera] = image
 

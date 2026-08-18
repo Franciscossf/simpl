@@ -1,5 +1,6 @@
 import pyqtgraph as pg
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -20,8 +21,41 @@ _NEUTRAL_TEXT_COLOR = "#000000"
 _OK_COLOR = "#2e7d32"
 _NG_COLOR = "#c62828"
 _RESULT_TEXT_COLOR = "#ffffff"
-_PASS_ICON = "\U0001F60A"
-_FAIL_ICON = "\U0001F622"
+_FACE_ICON_SIZE = 16
+
+
+def _build_face_icon(ok: bool) -> QIcon:
+    pixmap = QPixmap(_FACE_ICON_SIZE, _FACE_ICON_SIZE)
+    pixmap.fill(Qt.GlobalColor.transparent)
+
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QBrush(QColor(_OK_COLOR if ok else _NG_COLOR)))
+    painter.drawEllipse(1, 1, _FACE_ICON_SIZE - 2, _FACE_ICON_SIZE - 2)
+
+    painter.setBrush(QBrush(QColor("white")))
+    painter.drawEllipse(QRectF(4.5, 5.5, 2, 2))
+    painter.drawEllipse(QRectF(9.5, 5.5, 2, 2))
+
+    mouth = QPainterPath()
+    if ok:
+        mouth.moveTo(4, 10)
+        mouth.quadTo(8, 13, 12, 10)
+    else:
+        mouth.moveTo(4, 12)
+        mouth.quadTo(8, 9, 12, 12)
+
+    pen = QPen(QColor("white"))
+    pen.setWidthF(1.4)
+    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    painter.setPen(pen)
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawPath(mouth)
+
+    painter.end()
+    return QIcon(pixmap)
 
 
 class OperadorView(QWidget):
@@ -130,14 +164,15 @@ class OperadorView(QWidget):
     def clear_test_results(self) -> None:
         for (_, pelicula_name), item in self._pelicula_items.items():
             item.setText(0, pelicula_name)
+            item.setIcon(0, QIcon())
 
     def set_test_results(self, camera: str, results: list[dict]) -> None:
         for result in results:
             item = self._pelicula_items.get((camera, result["name"]))
             if item is None:
                 continue
-            icon = _PASS_ICON if result["ok"] else _FAIL_ICON
-            item.setText(0, f"{result['name']} {icon}")
+            item.setText(0, result["name"])
+            item.setIcon(0, _build_face_icon(result["ok"]))
 
     def show_result(self, ok: bool, score: float | None = None) -> None:
         color = _OK_COLOR if ok else _NG_COLOR

@@ -21,8 +21,8 @@ def compare_regions(reference: np.ndarray, live: np.ndarray) -> float:
     if reference.size == 0 or live.size == 0:
         return 0.0
 
-    reference_gray = cv2.cvtColor(reference, cv2.COLOR_RGB2GRAY)
-    live_gray = cv2.cvtColor(live, cv2.COLOR_RGB2GRAY)
+    reference_gray = reference if reference.ndim == 2 else cv2.cvtColor(reference, cv2.COLOR_RGB2GRAY)
+    live_gray = live if live.ndim == 2 else cv2.cvtColor(live, cv2.COLOR_RGB2GRAY)
 
     if live_gray.shape != reference_gray.shape:
         live_gray = cv2.resize(live_gray, (reference_gray.shape[1], reference_gray.shape[0]))

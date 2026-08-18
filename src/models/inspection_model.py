@@ -57,7 +57,7 @@ class InspectionModel(QObject):
 
         for camera, image in self._reference_images.items():
             image_path = target_dir / f"{camera}.png"
-            cv2.imwrite(str(image_path), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(str(image_path), image)
 
     def list_saved_models(self) -> list[str]:
         models_dir = data_path("models")
@@ -86,9 +86,7 @@ class InspectionModel(QObject):
             if image is None:
                 image_path = target_dir / f"{camera}.png"
                 if image_path.exists():
-                    image_bgr = cv2.imread(str(image_path))
-                    if image_bgr is not None:
-                        image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+                    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
             if image is not None:
                 self._reference_images[camera] = image
 
@@ -99,7 +97,7 @@ class InspectionModel(QObject):
     def _encode_image(image: np.ndarray | None) -> str | None:
         if image is None:
             return None
-        success, buffer = cv2.imencode(".png", cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        success, buffer = cv2.imencode(".png", image)
         if not success:
             return None
         return base64.b64encode(buffer).decode("ascii")
@@ -109,7 +107,4 @@ class InspectionModel(QObject):
         if not encoded:
             return None
         buffer = base64.b64decode(encoded)
-        image_bgr = cv2.imdecode(np.frombuffer(buffer, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if image_bgr is None:
-            return None
-        return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        return cv2.imdecode(np.frombuffer(buffer, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)

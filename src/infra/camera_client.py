@@ -16,7 +16,7 @@ class CameraClient:
         ok, frame = self._capture.read()
         if not ok:
             return None
-        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     def release(self) -> None:
         if self._capture is not None:

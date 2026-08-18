@@ -112,20 +112,25 @@ class OperadorView(QWidget):
         er_layout.addWidget(self.er_field)
         er_layout.addStretch()
 
-        er_area = QWidget()
-        er_area.setMinimumHeight(70)
-        er_area.setLayout(er_layout)
-
         self.send_button = QPushButton("Enviar")
 
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         button_layout.addWidget(self.send_button)
 
+        bottom_right_area = QWidget()
+        bottom_right_area.setMinimumHeight(160)
+        bottom_right_area.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        bottom_right_layout = QVBoxLayout(bottom_right_area)
+        bottom_right_layout.addLayout(er_layout)
+        bottom_right_layout.addStretch()
+        bottom_right_layout.addLayout(button_layout)
+
         right_layout = QVBoxLayout()
-        right_layout.addWidget(self.image_view)
-        right_layout.addWidget(er_area)
-        right_layout.addLayout(button_layout)
+        right_layout.addWidget(self.image_view, stretch=2)
+        right_layout.addWidget(bottom_right_area, stretch=1)
 
         main_layout = QHBoxLayout(self)
         main_layout.addLayout(left_layout, stretch=1)

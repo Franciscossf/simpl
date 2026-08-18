@@ -2,8 +2,10 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QDoubleSpinBox,
     QHBoxLayout,
     QInputDialog,
+    QLabel,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -14,6 +16,7 @@ from PySide6.QtWidgets import (
 
 _DEFAULT_ROI_POS = (10, 10)
 _DEFAULT_ROI_SIZE = (80, 80)
+_DEFAULT_THRESHOLD = 80.0
 _ROI_COLOR = "y"
 _ROI_SELECTED_COLOR = "r"
 
@@ -23,6 +26,7 @@ class SetupView(QWidget):
         super().__init__()
         self._roi_items: dict[str, pg.ROI] = {}
         self._roi_labels: dict[str, pg.TextItem] = {}
+        self._roi_thresholds: dict[str, float] = {}
         self._current_frame = None
         self._setup_ui()
 
@@ -44,6 +48,16 @@ class SetupView(QWidget):
 
         self.roi_list = QListWidget()
 
+        self.threshold_spinbox = QDoubleSpinBox()
+        self.threshold_spinbox.setRange(0.0, 100.0)
+        self.threshold_spinbox.setSuffix(" %")
+        self.threshold_spinbox.setValue(_DEFAULT_THRESHOLD)
+        self.threshold_spinbox.setEnabled(False)
+
+        threshold_row = QHBoxLayout()
+        threshold_row.addWidget(QLabel("Similaridade minima"))
+        threshold_row.addWidget(self.threshold_spinbox)
+
         self.add_roi_button = QPushButton("Adicionar ROI")
         self.remove_roi_button = QPushButton("Remover ROI")
         self.import_button = QPushButton("Importar modelo")
@@ -56,6 +70,7 @@ class SetupView(QWidget):
         side_layout = QVBoxLayout()
         side_layout.addLayout(camera_row)
         side_layout.addWidget(self.roi_list)
+        side_layout.addLayout(threshold_row)
         side_layout.addLayout(roi_buttons_layout)
         side_layout.addWidget(self.import_button)
         side_layout.addStretch()
@@ -100,6 +115,7 @@ class SetupView(QWidget):
             self.image_view.removeItem(label_item)
         self._roi_items = {}
         self._roi_labels = {}
+        self._roi_thresholds = {}
         self.roi_list.clear()
 
     def add_roi_item(
@@ -110,6 +126,7 @@ class SetupView(QWidget):
         w: float = _DEFAULT_ROI_SIZE[0],
         h: float = _DEFAULT_ROI_SIZE[1],
         angle: float = 0.0,
+        threshold: float = _DEFAULT_THRESHOLD,
     ) -> None:
         roi_item = pg.ROI(pos=(x, y), size=(w, h), angle=angle, movable=True)
         roi_item.addScaleHandle((1, 1), (0, 0))
@@ -126,6 +143,7 @@ class SetupView(QWidget):
 
         self._roi_items[name] = roi_item
         self._roi_labels[name] = label_item
+        self._roi_thresholds[name] = threshold
         self._update_roi_label_position(name)
         self.roi_list.addItem(QListWidgetItem(name))
 
@@ -146,6 +164,7 @@ class SetupView(QWidget):
         label_item = self._roi_labels.pop(name, None)
         if label_item is not None:
             self.image_view.removeItem(label_item)
+        self._roi_thresholds.pop(name, None)
         for item in self.roi_list.findItems(name, Qt.MatchFlag.MatchExactly):
             self.roi_list.takeItem(self.roi_list.row(item))
 
@@ -157,6 +176,21 @@ class SetupView(QWidget):
     def selected_roi_name(self) -> str | None:
         item = self.roi_list.currentItem()
         return item.text() if item is not None else None
+
+    def get_roi_threshold(self, name: str) -> float:
+        return self._roi_thresholds.get(name, _DEFAULT_THRESHOLD)
+
+    def set_roi_threshold(self, name: str, threshold: float) -> None:
+        if name in self._roi_thresholds:
+            self._roi_thresholds[name] = threshold
+
+    def show_roi_threshold(self, threshold: float | None) -> None:
+        self.threshold_spinbox.setEnabled(threshold is not None)
+        self.threshold_spinbox.blockSignals(True)
+        self.threshold_spinbox.setValue(
+            threshold if threshold is not None else _DEFAULT_THRESHOLD
+        )
+        self.threshold_spinbox.blockSignals(False)
 
     def get_rois_geometry(self) -> list[dict]:
         rois = []
@@ -171,6 +205,7 @@ class SetupView(QWidget):
                     "w": size.x(),
                     "h": size.y(),
                     "angle": roi_item.angle(),
+                    "threshold": self._roi_thresholds.get(name, _DEFAULT_THRESHOLD),
                 }
             )
         return rois

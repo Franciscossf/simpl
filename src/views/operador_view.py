@@ -20,11 +20,14 @@ _NEUTRAL_TEXT_COLOR = "#000000"
 _OK_COLOR = "#2e7d32"
 _NG_COLOR = "#c62828"
 _RESULT_TEXT_COLOR = "#ffffff"
+_PASS_ICON = "\U0001F60A"
+_FAIL_ICON = "\U0001F622"
 
 
 class OperadorView(QWidget):
     def __init__(self) -> None:
         super().__init__()
+        self._pelicula_items: dict[tuple[str, str], QTreeWidgetItem] = {}
         self._setup_ui()
 
     def _setup_ui(self) -> None:
@@ -114,12 +117,27 @@ class OperadorView(QWidget):
 
     def populate_tree(self, cameras: dict[str, list[str]]) -> None:
         self.tree.clear()
+        self._pelicula_items = {}
         for camera_name, peliculas in cameras.items():
             camera_item = QTreeWidgetItem([camera_name])
             for pelicula_name in peliculas:
-                camera_item.addChild(QTreeWidgetItem([pelicula_name]))
+                child_item = QTreeWidgetItem([pelicula_name])
+                camera_item.addChild(child_item)
+                self._pelicula_items[(camera_name, pelicula_name)] = child_item
             self.tree.addTopLevelItem(camera_item)
         self.tree.expandAll()
+
+    def clear_test_results(self) -> None:
+        for (_, pelicula_name), item in self._pelicula_items.items():
+            item.setText(0, pelicula_name)
+
+    def set_test_results(self, camera: str, results: list[dict]) -> None:
+        for result in results:
+            item = self._pelicula_items.get((camera, result["name"]))
+            if item is None:
+                continue
+            icon = _PASS_ICON if result["ok"] else _FAIL_ICON
+            item.setText(0, f"{result['name']} {icon}")
 
     def show_result(self, ok: bool, score: float | None = None) -> None:
         color = _OK_COLOR if ok else _NG_COLOR

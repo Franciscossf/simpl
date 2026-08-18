@@ -21,6 +21,7 @@ class SetupController:
         self.view.save_button.clicked.connect(self._on_save)
         self.view.toggle_camera_button.clicked.connect(self._on_toggle_camera)
         self.view.roi_list.currentItemChanged.connect(self._on_roi_selected)
+        self.view.threshold_spinbox.valueChanged.connect(self._on_threshold_changed)
 
     def _load_cameras(self) -> None:
         self.view.set_cameras(self.model.get_cameras())
@@ -48,6 +49,7 @@ class SetupController:
                 roi["w"],
                 roi["h"],
                 roi.get("angle", 0.0),
+                roi.get("threshold", 80.0),
             )
 
     def _commit_current_camera_rois(self) -> None:
@@ -71,6 +73,12 @@ class SetupController:
     def _on_roi_selected(self, current, previous) -> None:
         name = current.text() if current is not None else None
         self.view.highlight_roi(name)
+        self.view.show_roi_threshold(self.view.get_roi_threshold(name) if name else None)
+
+    def _on_threshold_changed(self, value: float) -> None:
+        name = self.view.selected_roi_name()
+        if name:
+            self.view.set_roi_threshold(name, value)
 
     def _on_save(self) -> None:
         self._commit_current_camera_rois()

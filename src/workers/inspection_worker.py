@@ -6,14 +6,18 @@ from src.models import similarity
 
 class InspectionWorker(QThread):
     camera_captured = Signal(str, object)
+    camera_tested = Signal(str, list)
     finished_ok = Signal(dict)
     error = Signal(str)
 
-    def __init__(self, cameras: dict[str, dict], threshold: float, parent=None) -> None:
-        """cameras: {camera_name: {"index": int, "reference_image": ndarray, "rois": list[dict]}}"""
+    def __init__(self, cameras: dict[str, dict], default_threshold: float, parent=None) -> None:
+        """cameras: {camera_name: {"index": int, "reference_image": ndarray, "rois": list[dict]}}
+
+        default_threshold is used only for ROIs that don't carry their own "threshold".
+        """
         super().__init__(parent)
         self._cameras = cameras
-        self._threshold = threshold
+        self._default_threshold = default_threshold
 
     def run(self) -> None:
         try:
@@ -36,11 +40,15 @@ class InspectionWorker(QThread):
                 self.camera_captured.emit(camera_name, live_image)
 
                 roi_results = similarity.compare_camera(
-                    data["reference_image"], live_image, data["rois"]
+                    data["reference_image"],
+                    live_image,
+                    data["rois"],
+                    default_threshold=self._default_threshold,
                 )
-                camera_ok = all(r["score"] >= self._threshold for r in roi_results)
+                camera_ok = all(r["ok"] for r in roi_results)
                 overall_ok = overall_ok and camera_ok
                 report[camera_name] = {"rois": roi_results, "ok": camera_ok}
+                self.camera_tested.emit(camera_name, roi_results)
 
             self.finished_ok.emit({"ok": overall_ok, "cameras": report})
         except Exception as error:

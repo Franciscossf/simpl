@@ -78,8 +78,10 @@ class OperadorController:
 
         self._current_cameras = cameras
         self.view.set_send_enabled(False)
+        self.view.clear_test_results()
         self._inspection_worker = InspectionWorker(cameras, threshold)
         self._inspection_worker.camera_captured.connect(self._on_camera_captured)
+        self._inspection_worker.camera_tested.connect(self._on_camera_tested)
         self._inspection_worker.finished_ok.connect(self._on_inspection_done)
         self._inspection_worker.error.connect(self._on_inspection_error)
         self._inspection_worker.finished.connect(self._inspection_worker.deleteLater)
@@ -88,6 +90,9 @@ class OperadorController:
     def _on_camera_captured(self, camera: str, live_image) -> None:
         self.view.show_image(live_image)
         self.view.set_rois(self._current_cameras.get(camera, {}).get("rois", []))
+
+    def _on_camera_tested(self, camera: str, roi_results: list) -> None:
+        self.view.set_test_results(camera, roi_results)
 
     def _on_inspection_done(self, report: dict) -> None:
         self.view.set_send_enabled(True)

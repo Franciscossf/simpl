@@ -32,12 +32,23 @@ def compare_regions(reference: np.ndarray, live: np.ndarray) -> float:
 
 
 def compare_camera(
-    reference_image: np.ndarray, live_image: np.ndarray, rois: list[dict]
+    reference_image: np.ndarray,
+    live_image: np.ndarray,
+    rois: list[dict],
+    default_threshold: float = 80.0,
 ) -> list[dict]:
     results = []
     for roi in rois:
         reference_crop = crop_roi(reference_image, roi)
         live_crop = crop_roi(live_image, roi)
         score = compare_regions(reference_crop, live_crop)
-        results.append({"name": roi["name"], "score": score})
+        threshold = roi.get("threshold", default_threshold)
+        results.append(
+            {
+                "name": roi["name"],
+                "score": score,
+                "threshold": threshold,
+                "ok": score >= threshold,
+            }
+        )
     return results

@@ -5,6 +5,7 @@ from src.models import similarity
 
 
 class InspectionWorker(QThread):
+    camera_captured = Signal(str, object)
     finished_ok = Signal(dict)
     error = Signal(str)
 
@@ -31,6 +32,8 @@ class InspectionWorker(QThread):
                 if live_image is None:
                     self.error.emit(f"Nao foi possivel capturar imagem da {camera_name}.")
                     return
+
+                self.camera_captured.emit(camera_name, live_image)
 
                 roi_results = similarity.compare_camera(
                     data["reference_image"], live_image, data["rois"]

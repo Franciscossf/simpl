@@ -121,9 +121,12 @@ class OperadorView(QWidget):
             self.tree.addTopLevelItem(camera_item)
         self.tree.expandAll()
 
-    def show_result(self, ok: bool) -> None:
+    def show_result(self, ok: bool, score: float | None = None) -> None:
         color = _OK_COLOR if ok else _NG_COLOR
-        self._paint_result(color, "OK" if ok else "NG", _RESULT_TEXT_COLOR)
+        text = "OK" if ok else "NG"
+        if score is not None:
+            text += f"\n{score:.1f}%"
+        self._paint_result(color, text, _RESULT_TEXT_COLOR)
 
     def clear_result(self) -> None:
         self._paint_result(_NEUTRAL_COLOR, "OK ou NG", _NEUTRAL_TEXT_COLOR)

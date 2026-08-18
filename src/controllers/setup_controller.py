@@ -20,6 +20,7 @@ class SetupController:
         self.view.import_button.clicked.connect(self._on_import)
         self.view.save_button.clicked.connect(self._on_save)
         self.view.toggle_camera_button.clicked.connect(self._on_toggle_camera)
+        self.view.roi_list.currentItemChanged.connect(self._on_roi_selected)
 
     def _load_cameras(self) -> None:
         self.view.set_cameras(self.model.get_cameras())
@@ -66,6 +67,10 @@ class SetupController:
         name = self.view.selected_roi_name()
         if name:
             self.view.remove_roi_item(name)
+
+    def _on_roi_selected(self, current, previous) -> None:
+        name = current.text() if current is not None else None
+        self.view.highlight_roi(name)
 
     def _on_save(self) -> None:
         self._commit_current_camera_rois()

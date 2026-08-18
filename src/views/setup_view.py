@@ -14,12 +14,15 @@ from PySide6.QtWidgets import (
 
 _DEFAULT_ROI_POS = (10, 10)
 _DEFAULT_ROI_SIZE = (80, 80)
+_ROI_COLOR = "y"
+_ROI_SELECTED_COLOR = "r"
 
 
 class SetupView(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._roi_items: dict[str, pg.ROI] = {}
+        self._roi_labels: dict[str, pg.TextItem] = {}
         self._current_frame = None
         self._setup_ui()
 
@@ -93,7 +96,10 @@ class SetupView(QWidget):
     def clear_rois(self) -> None:
         for roi_item in self._roi_items.values():
             self.image_view.removeItem(roi_item)
+        for label_item in self._roi_labels.values():
+            self.image_view.removeItem(label_item)
         self._roi_items = {}
+        self._roi_labels = {}
         self.roi_list.clear()
 
     def add_roi_item(
@@ -108,17 +114,45 @@ class SetupView(QWidget):
         roi_item = pg.ROI(pos=(x, y), size=(w, h), angle=angle, movable=True)
         roi_item.addScaleHandle((1, 1), (0, 0))
         roi_item.addRotateHandle((0, 0), (0.5, 0.5))
-        roi_item.setPen(pg.mkPen("y", width=2))
+        roi_item.setPen(pg.mkPen(_ROI_COLOR, width=2))
         self.image_view.addItem(roi_item)
+
+        label_item = pg.TextItem(name, color=_ROI_COLOR, anchor=(0, 1))
+        self.image_view.addItem(label_item)
+
+        roi_item.sigRegionChanged.connect(
+            lambda *_: self._update_roi_label_position(name)
+        )
+
         self._roi_items[name] = roi_item
+        self._roi_labels[name] = label_item
+        self._update_roi_label_position(name)
         self.roi_list.addItem(QListWidgetItem(name))
+
+    def _update_roi_label_position(self, name: str) -> None:
+        roi_item = self._roi_items.get(name)
+        label_item = self._roi_labels.get(name)
+        if roi_item is None or label_item is None:
+            return
+        # A view usa invertY(True), entao o canto visualmente "de cima" e o
+        # local (0, 0), nao (0, h) - y menor fica mais alto na tela.
+        top_left = roi_item.mapToParent(pg.Point(0, 0))
+        label_item.setPos(top_left)
 
     def remove_roi_item(self, name: str) -> None:
         roi_item = self._roi_items.pop(name, None)
         if roi_item is not None:
             self.image_view.removeItem(roi_item)
+        label_item = self._roi_labels.pop(name, None)
+        if label_item is not None:
+            self.image_view.removeItem(label_item)
         for item in self.roi_list.findItems(name, Qt.MatchFlag.MatchExactly):
             self.roi_list.takeItem(self.roi_list.row(item))
+
+    def highlight_roi(self, name: str | None) -> None:
+        for roi_name, roi_item in self._roi_items.items():
+            color = _ROI_SELECTED_COLOR if roi_name == name else _ROI_COLOR
+            roi_item.setPen(pg.mkPen(color, width=2))
 
     def selected_roi_name(self) -> str | None:
         item = self.roi_list.currentItem()

@@ -1,6 +1,16 @@
+import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QIcon,
+    QImage,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -9,6 +19,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QTreeWidget,
     QTreeWidgetItem,
@@ -56,6 +67,21 @@ def _build_face_icon(ok: bool) -> QIcon:
 
     painter.end()
     return QIcon(pixmap)
+
+
+def _numpy_to_pixmap(array: np.ndarray | None, max_size: int = 96) -> QPixmap:
+    if array is None or array.size == 0:
+        return QPixmap()
+    array = np.ascontiguousarray(array)
+    height, width = array.shape[:2]
+    image = QImage(array.data, width, height, width, QImage.Format.Format_Grayscale8)
+    pixmap = QPixmap.fromImage(image.copy())
+    return pixmap.scaled(
+        max_size,
+        max_size,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation,
+    )
 
 
 class OperadorView(QWidget):
@@ -106,6 +132,20 @@ class OperadorView(QWidget):
         self.image_item = pg.ImageItem()
         self.image_view.addItem(self.image_item)
 
+        self.ng_crops_widget = QWidget()
+        self.ng_crops_layout = QHBoxLayout(self.ng_crops_widget)
+        self.ng_crops_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        self.ng_crops_scroll = QScrollArea()
+        self.ng_crops_scroll.setWidget(self.ng_crops_widget)
+        self.ng_crops_scroll.setWidgetResizable(True)
+        self.ng_crops_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.ng_crops_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.ng_crops_scroll.setFixedHeight(150)
+        self.ng_crops_scroll.setVisible(False)
+
         self.er_field = QLineEdit()
         er_layout = QHBoxLayout()
         er_layout.addWidget(QLabel("ER"))
@@ -130,6 +170,7 @@ class OperadorView(QWidget):
 
         right_layout = QVBoxLayout()
         right_layout.addWidget(self.image_view, stretch=2)
+        right_layout.addWidget(self.ng_crops_scroll)
         right_layout.addWidget(bottom_right_area, stretch=1)
 
         main_layout = QHBoxLayout(self)
@@ -208,6 +249,36 @@ class OperadorView(QWidget):
                 continue
             item.setText(0, result["name"])
             item.setIcon(0, _build_face_icon(result["ok"]))
+
+    def clear_ng_crops(self) -> None:
+        while self.ng_crops_layout.count():
+            item = self.ng_crops_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        self.ng_crops_scroll.setVisible(False)
+
+    def show_ng_crop(self, name: str, reference_crop, score: float) -> None:
+        item_widget = QWidget()
+        item_layout = QVBoxLayout(item_widget)
+        item_layout.setContentsMargins(4, 4, 4, 4)
+
+        title = QLabel(f"{name}: {score:.1f}%")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet(f"color: {_NG_COLOR}; font-weight: bold;")
+        item_layout.addWidget(title)
+
+        crop_label = QLabel()
+        crop_label.setPixmap(_numpy_to_pixmap(reference_crop))
+        crop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        item_layout.addWidget(crop_label)
+
+        caption_label = QLabel("Referencia")
+        caption_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        item_layout.addWidget(caption_label)
+
+        self.ng_crops_layout.addWidget(item_widget)
+        self.ng_crops_scroll.setVisible(True)
 
     def show_result(self, ok: bool) -> None:
         color = _OK_COLOR if ok else _NG_COLOR

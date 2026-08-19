@@ -78,6 +78,7 @@ class OperadorController:
         self._current_cameras = cameras
         self.view.set_send_enabled(False)
         self.view.clear_test_results()
+        self.view.clear_ng_crops()
         self._inspection_worker = InspectionWorker(cameras, threshold)
         self._inspection_worker.camera_captured.connect(self._on_camera_captured)
         self._inspection_worker.camera_tested.connect(self._on_camera_tested)
@@ -93,6 +94,13 @@ class OperadorController:
     def _on_camera_tested(self, camera: str, roi_results: list) -> None:
         self.view.set_test_results(camera, roi_results)
         self.view.update_roi_scores(roi_results)
+        for result in roi_results:
+            if not result["ok"]:
+                self.view.show_ng_crop(
+                    result["name"],
+                    result["reference_crop"],
+                    result["score"],
+                )
 
     def _on_inspection_done(self, report: dict) -> None:
         self.view.set_send_enabled(True)

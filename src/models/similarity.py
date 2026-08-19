@@ -40,20 +40,25 @@ def compare_camera(
     results = []
     for roi in rois:
         live_crop = crop_roi(live_image, roi)
-        score = max(
-            (
-                compare_regions(crop_roi(reference_image, roi), live_crop)
-                for reference_image in reference_images
-            ),
-            default=0.0,
-        )
+
+        best_score = 0.0
+        best_reference_crop = None
+        for reference_image in reference_images:
+            reference_crop = crop_roi(reference_image, roi)
+            score = compare_regions(reference_crop, live_crop)
+            if best_reference_crop is None or score > best_score:
+                best_score = score
+                best_reference_crop = reference_crop
+
         threshold = roi.get("threshold", default_threshold)
         results.append(
             {
                 "name": roi["name"],
-                "score": score,
+                "score": best_score,
                 "threshold": threshold,
-                "ok": score >= threshold,
+                "ok": best_score >= threshold,
+                "live_crop": live_crop,
+                "reference_crop": best_reference_crop,
             }
         )
     return results

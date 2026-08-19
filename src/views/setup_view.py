@@ -64,10 +64,12 @@ class SetupView(QWidget):
         self.reference_list = QListWidget()
         self.add_reference_button = QPushButton("Adicionar referencia")
         self.remove_reference_button = QPushButton("Remover referencia")
+        self.remove_all_references_button = QPushButton("Remover todas")
 
         reference_buttons_layout = QHBoxLayout()
         reference_buttons_layout.addWidget(self.add_reference_button)
         reference_buttons_layout.addWidget(self.remove_reference_button)
+        reference_buttons_layout.addWidget(self.remove_all_references_button)
 
         self.roi_list = QListWidget()
 
@@ -142,6 +144,15 @@ class SetupView(QWidget):
         if 0 <= index < len(self._reference_images):
             self._reference_images.pop(index)
             self._refresh_reference_list()
+
+    def confirm_remove_all_references(self) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Remover todas",
+            "Deseja remover todas as referencias desta camera?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes
 
     def selected_reference_index(self) -> int | None:
         row = self.reference_list.currentRow()

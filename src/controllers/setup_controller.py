@@ -21,6 +21,9 @@ class SetupController:
         self.view.save_button.clicked.connect(self._on_save)
         self.view.add_reference_button.clicked.connect(self._on_add_reference)
         self.view.remove_reference_button.clicked.connect(self._on_remove_reference)
+        self.view.remove_all_references_button.clicked.connect(
+            self._on_remove_all_references
+        )
         self.view.toggle_camera_button.clicked.connect(self._on_toggle_camera)
         self.view.roi_list.currentItemChanged.connect(self._on_roi_selected)
         self.view.threshold_spinbox.valueChanged.connect(self._on_threshold_changed)
@@ -79,6 +82,12 @@ class SetupController:
         index = self.view.selected_reference_index()
         if index is not None:
             self.view.remove_reference_image(index)
+
+    def _on_remove_all_references(self) -> None:
+        if not self.view.get_reference_images():
+            return
+        if self.view.confirm_remove_all_references():
+            self.view.clear_references()
 
     def _on_add_roi(self) -> None:
         name = self.view.prompt_roi_name()

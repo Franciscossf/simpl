@@ -273,10 +273,6 @@ class OperadorView(QWidget):
         crop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         item_layout.addWidget(crop_label)
 
-        caption_label = QLabel("Referencia")
-        caption_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        item_layout.addWidget(caption_label)
-
         self.ng_crops_layout.addWidget(item_widget)
         self.ng_crops_scroll.setVisible(True)
 

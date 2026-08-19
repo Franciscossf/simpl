@@ -9,6 +9,8 @@ class OperadorController:
         self.view = view
         self._inspection_worker: InspectionWorker | None = None
         self._current_cameras: dict = {}
+        self._last_live_images: dict = {}
+        self._last_test_results: dict = {}
         self._connect_signals()
 
     def _connect_signals(self) -> None:
@@ -29,6 +31,8 @@ class OperadorController:
             self.view.show_error(f"Nao foi possivel carregar o modelo '{model_name}'.")
             return
         self.view.set_current_model(model_name)
+        self._last_live_images = {}
+        self._last_test_results = {}
 
         cameras = self.model.get_cameras()
         if cameras:
@@ -41,6 +45,15 @@ class OperadorController:
         self._show_camera(camera)
 
     def _show_camera(self, camera: str) -> None:
+        live_image = self._last_live_images.get(camera)
+        if live_image is not None:
+            self.view.show_image(live_image)
+            self.view.set_rois(self.model.get_rois(camera))
+            roi_results = self._last_test_results.get(camera)
+            if roi_results:
+                self.view.update_roi_scores(roi_results)
+            return
+
         reference_image = self.model.get_reference_image(camera)
         if reference_image is not None:
             self.view.show_image(reference_image)
@@ -76,6 +89,8 @@ class OperadorController:
             return
 
         self._current_cameras = cameras
+        self._last_live_images = {}
+        self._last_test_results = {}
         self.view.set_send_enabled(False)
         self.view.clear_test_results()
         self.view.clear_ng_crops()
@@ -88,10 +103,12 @@ class OperadorController:
         self._inspection_worker.start()
 
     def _on_camera_captured(self, camera: str, live_image) -> None:
+        self._last_live_images[camera] = live_image
         self.view.show_image(live_image)
         self.view.set_rois(self._current_cameras.get(camera, {}).get("rois", []))
 
     def _on_camera_tested(self, camera: str, roi_results: list) -> None:
+        self._last_test_results[camera] = roi_results
         self.view.set_test_results(camera, roi_results)
         self.view.update_roi_scores(roi_results)
         for result in roi_results:

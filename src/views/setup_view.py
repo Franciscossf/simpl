@@ -62,8 +62,8 @@ class SetupView(QWidget):
         self.image_view.addItem(self.image_item)
 
         self.reference_list = QListWidget()
-        self.add_reference_button = QPushButton("Adicionar referencia")
-        self.remove_reference_button = QPushButton("Remover referencia")
+        self.add_reference_button = QPushButton("Adicionar")
+        self.remove_reference_button = QPushButton("Remover")
         self.remove_all_references_button = QPushButton("Remover todas")
 
         reference_buttons_layout = QHBoxLayout()

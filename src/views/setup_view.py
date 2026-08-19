@@ -1,6 +1,7 @@
 import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QHBoxLayout,
@@ -10,6 +11,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QSlider,
     QVBoxLayout,
     QWidget,
 )
@@ -37,6 +39,18 @@ class SetupView(QWidget):
         camera_row = QHBoxLayout()
         camera_row.addWidget(self.camera_selector)
         camera_row.addWidget(self.toggle_camera_button)
+
+        self.autofocus_checkbox = QCheckBox("Foco automatico")
+        self.autofocus_checkbox.setChecked(True)
+        self.autofocus_checkbox.setEnabled(False)
+
+        self.focus_slider = QSlider(Qt.Orientation.Horizontal)
+        self.focus_slider.setRange(0, 255)
+        self.focus_slider.setEnabled(False)
+
+        focus_row = QHBoxLayout()
+        focus_row.addWidget(QLabel("Foco"))
+        focus_row.addWidget(self.focus_slider)
 
         self.image_view = pg.PlotWidget()
         self.image_view.setAspectLocked(True)
@@ -69,6 +83,8 @@ class SetupView(QWidget):
 
         side_layout = QVBoxLayout()
         side_layout.addLayout(camera_row)
+        side_layout.addWidget(self.autofocus_checkbox)
+        side_layout.addLayout(focus_row)
         side_layout.addWidget(self.roi_list)
         side_layout.addLayout(threshold_row)
         side_layout.addLayout(roi_buttons_layout)
@@ -98,6 +114,11 @@ class SetupView(QWidget):
     def set_camera_connected(self, connected: bool) -> None:
         self.toggle_camera_button.setText("Desligar" if connected else "Ligar")
         self.camera_selector.setEnabled(not connected)
+        self.autofocus_checkbox.setEnabled(connected)
+        self.focus_slider.setEnabled(connected and not self.autofocus_checkbox.isChecked())
+
+    def set_focus_slider_enabled(self, enabled: bool) -> None:
+        self.focus_slider.setEnabled(enabled)
 
     def show_camera_error(self, message: str) -> None:
         QMessageBox.warning(self, "Camera", message)

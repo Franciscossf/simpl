@@ -22,3 +22,11 @@ class CameraClient:
         if self._capture is not None:
             self._capture.release()
             self._capture = None
+
+    def set_autofocus(self, enabled: bool) -> None:
+        if self._capture is not None:
+            self._capture.set(cv2.CAP_PROP_AUTOFOCUS, 1.0 if enabled else 0.0)
+
+    def set_focus(self, value: int) -> None:
+        if self._capture is not None:
+            self._capture.set(cv2.CAP_PROP_FOCUS, value)

@@ -7,11 +7,14 @@ from src.controllers.operador_controller import OperadorController
 from src.controllers.setup_controller import SetupController
 from src.models.inspection_model import InspectionModel
 from src.views.main_view import MainView
+import qdarktheme
 
 
 def main():
     pg.setConfigOptions(imageAxisOrder="row-major")
     app = QApplication(sys.argv)
+    qdarktheme.setup_theme(custom_colors={"primary": "#D71ABE"},
+                           theme="light")
 
     model = InspectionModel()
     view = MainView()

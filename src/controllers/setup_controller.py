@@ -22,6 +22,8 @@ class SetupController:
         self.view.toggle_camera_button.clicked.connect(self._on_toggle_camera)
         self.view.roi_list.currentItemChanged.connect(self._on_roi_selected)
         self.view.threshold_spinbox.valueChanged.connect(self._on_threshold_changed)
+        self.view.autofocus_checkbox.toggled.connect(self._on_autofocus_toggled)
+        self.view.focus_slider.valueChanged.connect(self._on_focus_changed)
 
     def _load_cameras(self) -> None:
         self.view.set_cameras(self.model.get_cameras())
@@ -80,6 +82,16 @@ class SetupController:
         if name:
             self.view.set_roi_threshold(name, value)
 
+    def _on_autofocus_toggled(self, enabled: bool) -> None:
+        connected = self._camera_worker is not None and self._camera_worker.isRunning()
+        self.view.set_focus_slider_enabled(connected and not enabled)
+        if self._camera_worker is not None:
+            self._camera_worker.request_autofocus(enabled)
+
+    def _on_focus_changed(self, value: int) -> None:
+        if self._camera_worker is not None:
+            self._camera_worker.request_focus(value)
+
     def _on_save(self) -> None:
         self._commit_current_camera_rois()
 
@@ -122,6 +134,11 @@ class SetupController:
         self._camera_worker.finished.connect(self._camera_worker.deleteLater)
         self._camera_worker.start()
         self.view.set_camera_connected(True)
+
+        autofocus_enabled = self.view.autofocus_checkbox.isChecked()
+        self._camera_worker.request_autofocus(autofocus_enabled)
+        if not autofocus_enabled:
+            self._camera_worker.request_focus(self.view.focus_slider.value())
 
     def _stop_camera(self) -> None:
         if self._camera_worker is not None:

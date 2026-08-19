@@ -146,8 +146,11 @@ class OperadorView(QWidget):
         self.ng_crops_scroll.setFixedHeight(150)
         self.ng_crops_scroll.setVisible(False)
 
+        self.op_field = QLineEdit()
         self.er_field = QLineEdit()
         er_layout = QHBoxLayout()
+        er_layout.addWidget(QLabel("OP"))
+        er_layout.addWidget(self.op_field)
         er_layout.addWidget(QLabel("ER"))
         er_layout.addWidget(self.er_field)
         er_layout.addStretch()

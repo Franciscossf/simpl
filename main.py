@@ -14,7 +14,7 @@ def main():
     pg.setConfigOptions(imageAxisOrder="row-major")
     app = QApplication(sys.argv)
     qdarktheme.setup_theme(custom_colors={"primary": "#D71ABE"},
-                           theme="light")
+                           theme="dark")
 
     model = InspectionModel()
     view = MainView()

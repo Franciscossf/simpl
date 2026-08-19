@@ -19,6 +19,8 @@ class SetupController:
         self.view.remove_roi_button.clicked.connect(self._on_remove_roi)
         self.view.import_button.clicked.connect(self._on_import)
         self.view.save_button.clicked.connect(self._on_save)
+        self.view.add_reference_button.clicked.connect(self._on_add_reference)
+        self.view.remove_reference_button.clicked.connect(self._on_remove_reference)
         self.view.toggle_camera_button.clicked.connect(self._on_toggle_camera)
         self.view.roi_list.currentItemChanged.connect(self._on_roi_selected)
         self.view.threshold_spinbox.valueChanged.connect(self._on_threshold_changed)
@@ -36,12 +38,14 @@ class SetupController:
     def _refresh_current_camera_view(self) -> None:
         self.view.clear_rois()
         self.view.clear_frame()
+        self.view.clear_references()
         if not self._current_camera:
             return
 
-        reference_image = self.model.get_reference_image(self._current_camera)
-        if reference_image is not None:
-            self.view.show_frame(reference_image)
+        reference_images = self.model.get_reference_images(self._current_camera)
+        self.view.set_reference_images(reference_images)
+        if reference_images:
+            self.view.show_frame(reference_images[-1])
 
         for roi in self.model.get_rois(self._current_camera):
             self.view.add_roi_item(
@@ -58,9 +62,23 @@ class SetupController:
         if not self._current_camera:
             return
         self.model.set_rois(self._current_camera, self.view.get_rois_geometry())
+        self.model.set_reference_images(
+            self._current_camera, self.view.get_reference_images()
+        )
+
+    def _on_add_reference(self) -> None:
         frame = self.view.get_current_frame()
-        if frame is not None:
-            self.model.set_reference_image(self._current_camera, frame)
+        if frame is None:
+            self.view.show_camera_error(
+                "Nenhuma imagem capturada para usar como referencia."
+            )
+            return
+        self.view.add_reference_image(frame)
+
+    def _on_remove_reference(self) -> None:
+        index = self.view.selected_reference_index()
+        if index is not None:
+            self.view.remove_reference_image(index)
 
     def _on_add_roi(self) -> None:
         name = self.view.prompt_roi_name()

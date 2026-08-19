@@ -30,6 +30,7 @@ class SetupView(QWidget):
         self._roi_labels: dict[str, pg.TextItem] = {}
         self._roi_thresholds: dict[str, float] = {}
         self._current_frame = None
+        self._reference_images: list = []
         self._setup_ui()
 
     def _setup_ui(self) -> None:
@@ -60,6 +61,14 @@ class SetupView(QWidget):
         self.image_item = pg.ImageItem()
         self.image_view.addItem(self.image_item)
 
+        self.reference_list = QListWidget()
+        self.add_reference_button = QPushButton("Adicionar referencia")
+        self.remove_reference_button = QPushButton("Remover referencia")
+
+        reference_buttons_layout = QHBoxLayout()
+        reference_buttons_layout.addWidget(self.add_reference_button)
+        reference_buttons_layout.addWidget(self.remove_reference_button)
+
         self.roi_list = QListWidget()
 
         self.threshold_spinbox = QDoubleSpinBox()
@@ -85,6 +94,9 @@ class SetupView(QWidget):
         side_layout.addLayout(camera_row)
         side_layout.addWidget(self.autofocus_checkbox)
         side_layout.addLayout(focus_row)
+        side_layout.addWidget(QLabel("Referencias"))
+        side_layout.addWidget(self.reference_list)
+        side_layout.addLayout(reference_buttons_layout)
         side_layout.addWidget(self.roi_list)
         side_layout.addLayout(threshold_row)
         side_layout.addLayout(roi_buttons_layout)
@@ -110,6 +122,35 @@ class SetupView(QWidget):
     def clear_frame(self) -> None:
         self._current_frame = None
         self.image_item.clear()
+
+    def set_reference_images(self, images: list) -> None:
+        self._reference_images = list(images)
+        self._refresh_reference_list()
+
+    def get_reference_images(self) -> list:
+        return self._reference_images
+
+    def clear_references(self) -> None:
+        self._reference_images = []
+        self.reference_list.clear()
+
+    def add_reference_image(self, image) -> None:
+        self._reference_images.append(image)
+        self._refresh_reference_list()
+
+    def remove_reference_image(self, index: int) -> None:
+        if 0 <= index < len(self._reference_images):
+            self._reference_images.pop(index)
+            self._refresh_reference_list()
+
+    def selected_reference_index(self) -> int | None:
+        row = self.reference_list.currentRow()
+        return row if row >= 0 else None
+
+    def _refresh_reference_list(self) -> None:
+        self.reference_list.clear()
+        for i in range(len(self._reference_images)):
+            self.reference_list.addItem(QListWidgetItem(f"Referencia {i + 1}"))
 
     def set_camera_connected(self, connected: bool) -> None:
         self.toggle_camera_button.setText("Desligar" if connected else "Ligar")

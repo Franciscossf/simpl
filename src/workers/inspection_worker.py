@@ -11,7 +11,7 @@ class InspectionWorker(QThread):
     error = Signal(str)
 
     def __init__(self, cameras: dict[str, dict], default_threshold: float, parent=None) -> None:
-        """cameras: {camera_name: {"index": int, "reference_image": ndarray, "rois": list[dict]}}
+        """cameras: {camera_name: {"index": int, "reference_images": list[ndarray], "rois": list[dict]}}
 
         default_threshold is used only for ROIs that don't carry their own "threshold".
         """
@@ -40,7 +40,7 @@ class InspectionWorker(QThread):
                 self.camera_captured.emit(camera_name, live_image)
 
                 roi_results = similarity.compare_camera(
-                    data["reference_image"],
+                    data["reference_images"],
                     live_image,
                     data["rois"],
                     default_threshold=self._default_threshold,

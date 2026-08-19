@@ -58,13 +58,13 @@ class OperadorController:
 
         cameras = {}
         for index, camera in enumerate(self.model.get_cameras()):
-            reference_image = self.model.get_reference_image(camera)
+            reference_images = self.model.get_reference_images(camera)
             rois = self.model.get_rois(camera)
-            if reference_image is None or not rois:
+            if not reference_images or not rois:
                 continue
             cameras[camera] = {
                 "index": index,
-                "reference_image": reference_image,
+                "reference_images": reference_images,
                 "rois": rois,
             }
 

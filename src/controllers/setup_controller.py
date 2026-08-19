@@ -191,6 +191,9 @@ class SetupController:
         self._camera_worker = None
         self.view.set_camera_connected(False)
 
-    def shutdown(self) -> None:
+    def stop_camera(self) -> None:
         if self._camera_worker is not None and self._camera_worker.isRunning():
             self._stop_camera()
+
+    def shutdown(self) -> None:
+        self.stop_camera()

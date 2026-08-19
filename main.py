@@ -22,6 +22,7 @@ def main():
     operador_controller = OperadorController(model=model, view=view.operador_view)
     setup_controller = SetupController(model=model, view=view.setup_view)
     app.aboutToQuit.connect(setup_controller.shutdown)
+    view.operador_tab_activated.connect(setup_controller.stop_camera)
 
     view.show()
     sys.exit(app.exec())

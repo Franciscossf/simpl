@@ -33,6 +33,11 @@ class InspectionModel(QObject):
         self._rois[camera] = rois
         self.rois_changed.emit()
 
+    def reset(self) -> None:
+        self._rois = {camera: [] for camera in self._cameras}
+        self._reference_images = {}
+        self.rois_changed.emit()
+
     def set_reference_images(self, camera: str, images: list[np.ndarray]) -> None:
         self._reference_images[camera] = images
 

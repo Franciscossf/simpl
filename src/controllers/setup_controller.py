@@ -18,6 +18,7 @@ class SetupController:
         self.view.add_roi_button.clicked.connect(self._on_add_roi)
         self.view.remove_roi_button.clicked.connect(self._on_remove_roi)
         self.view.import_button.clicked.connect(self._on_import)
+        self.view.new_model_button.clicked.connect(self._on_new_model)
         self.view.save_button.clicked.connect(self._on_save)
         self.view.add_reference_button.clicked.connect(self._on_add_reference)
         self.view.remove_reference_button.clicked.connect(self._on_remove_reference)
@@ -156,6 +157,13 @@ class SetupController:
         self._last_model_name = model_name
         self._refresh_current_camera_view()
         self.view.show_imported_message(model_name)
+
+    def _on_new_model(self) -> None:
+        if not self.view.confirm_new_model():
+            return
+        self.model.reset()
+        self._last_model_name = None
+        self._refresh_current_camera_view()
 
     def _on_toggle_camera(self) -> None:
         if self._camera_worker is not None and self._camera_worker.isRunning():

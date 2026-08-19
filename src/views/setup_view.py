@@ -86,11 +86,16 @@ class SetupView(QWidget):
         self.add_roi_button = QPushButton("Adicionar ROI")
         self.remove_roi_button = QPushButton("Remover ROI")
         self.import_button = QPushButton("Importar modelo")
+        self.new_model_button = QPushButton("Novo +")
         self.save_button = QPushButton("Salvar")
 
         roi_buttons_layout = QHBoxLayout()
         roi_buttons_layout.addWidget(self.add_roi_button)
         roi_buttons_layout.addWidget(self.remove_roi_button)
+
+        model_buttons_layout = QHBoxLayout()
+        model_buttons_layout.addWidget(self.import_button)
+        model_buttons_layout.addWidget(self.new_model_button)
 
         side_layout = QVBoxLayout()
         side_layout.addLayout(camera_row)
@@ -102,7 +107,7 @@ class SetupView(QWidget):
         side_layout.addWidget(self.roi_list)
         side_layout.addLayout(threshold_row)
         side_layout.addLayout(roi_buttons_layout)
-        side_layout.addWidget(self.import_button)
+        side_layout.addLayout(model_buttons_layout)
         side_layout.addStretch()
         side_layout.addWidget(self.save_button)
 
@@ -308,6 +313,15 @@ class SetupView(QWidget):
         QMessageBox.information(
             self, "Importar modelo", f"Modelo '{model_name}' importado com sucesso."
         )
+
+    def confirm_new_model(self) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Novo modelo",
+            "Deseja criar um novo modelo? As ROIs e referencias nao salvas serao perdidas.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes
 
     def show_save_error(self, message: str) -> None:
         QMessageBox.warning(self, "Salvar", message)

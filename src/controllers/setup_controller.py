@@ -122,6 +122,18 @@ class SetupController:
     def _on_save(self) -> None:
         self._commit_current_camera_rois()
 
+        cameras_missing_reference = [
+            camera
+            for camera in self.model.get_cameras()
+            if self.model.get_rois(camera) and not self.model.get_reference_images(camera)
+        ]
+        if cameras_missing_reference:
+            self.view.show_save_error(
+                "Adicione ao menos uma referencia para: "
+                + ", ".join(cameras_missing_reference)
+            )
+            return
+
         model_name = self.view.prompt_model_name(default=self._last_model_name or "")
         if not model_name:
             return

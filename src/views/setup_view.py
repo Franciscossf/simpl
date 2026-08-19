@@ -309,6 +309,9 @@ class SetupView(QWidget):
             self, "Importar modelo", f"Modelo '{model_name}' importado com sucesso."
         )
 
+    def show_save_error(self, message: str) -> None:
+        QMessageBox.warning(self, "Salvar", message)
+
     def confirm_save(self, model_name: str) -> bool:
         answer = QMessageBox.question(
             self,
